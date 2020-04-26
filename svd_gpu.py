@@ -15,6 +15,7 @@ SPACE_SIZE = 2
 
 
 def tridiag(n):
+    # generate triadiagonal matrix
     return np.diag(np.random.rand(n - 1), -1) \
            + np.diag(np.random.rand(n), 0) \
            + np.diag(np.random.rand(n - 1), 1)
@@ -22,6 +23,7 @@ def tridiag(n):
 
 def gen_unit_vector(n):
     un_norm = [normalvariate(0, 1) for _ in range(n)]
+    # The singular values are sqrt of eigen values
     norm_val = np.sqrt(sum(x * x for x in un_norm))
     return [x / norm_val for x in un_norm]
 
@@ -38,11 +40,14 @@ def svd_1d(matrix, epsilon=ERROR_VAL):
 
     i = 0
     while True:
+        # The eigenvalues of A.transpose * A  and since A.transponse * A is symmetric we know that the eigenvectors
+        # will be orthogonal.
         i += 1
         last_v = curr_v
         curr_v = np.dot(B, last_v)
         curr_v = curr_v / norm(curr_v)
 
+        # do normalization while converge error
         if abs(np.dot(curr_v, last_v)) > 1 - epsilon:
             return curr_v
 
@@ -54,6 +59,7 @@ def svd(matrix, k=None, epsilon=ERROR_VAL):
     if k is None:
         k = min(n, p)
 
+    # tqdm is progress bar
     for i in tqdm(range(k)):
         matrix_for1_d = matrix.copy()
 
@@ -61,11 +67,15 @@ def svd(matrix, k=None, epsilon=ERROR_VAL):
             matrix_for1_d -= singular_value * np.outer(orthogonal_u, orthogonal_v)
 
         if n > p:
+            # Now we find the right
+            # singular vectors(the columns of V ) by finding an orthonormal
+            # set of eigen vectors of A.transpose * A.
             orthogonal_v = svd_1d(matrix_for1_d, epsilon=epsilon)  # next singular vector
             u_unnormalized = np.dot(matrix, orthogonal_v)
             sigma = norm(u_unnormalized)  # next singular value
             orthogonal_u = u_unnormalized / sigma
         else:
+            # First we compute the singular values σi by finding the eigenvalues of A * A.transpose
             orthogonal_u = svd_1d(matrix_for1_d, epsilon=epsilon)  # next singular vector
             v_unnormalized = np.dot(matrix.T, orthogonal_u)
             sigma = norm(v_unnormalized)  # next singular value
@@ -73,6 +83,7 @@ def svd(matrix, k=None, epsilon=ERROR_VAL):
 
         svd_iterator.append((sigma, orthogonal_u, orthogonal_v))
 
+    # compute final values
     diagonal_s, orthogonal_u, orthogonal_v = [np.array(x) for x in tqdm(zip(*svd_iterator))]
     return diagonal_s, orthogonal_u.T, orthogonal_v
 
